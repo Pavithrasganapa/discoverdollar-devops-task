@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo_user
+      MONGO_INITDB_ROOT_PASSWORD: mongo_pass
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - appnet
+
+  backend:
+    image: pavitra2024/discoverdollar-backend:latest   # UPDATE SAME NAME IN DOCKER HUB
+    container_name: backend
+    restart: unless-stopped
+    environment:
+      MONGO_URL: "mongodb://mongo:27017/discoverdollardb"
+      PORT: 3000
+    depends_on:
+      - mongo
+    networks:
+      - appnet
+    expose:
+      - 3000
+
+  frontend:
+    image: pavitra2024/discoverdollar-frontend:latest  # UPDATE SAME NAME IN DOCKER HUB
+    container_name: frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - appnet
+    expose:
+      - 80
+
+  nginx:
+    image: nginx:latest
+    container_name: reverse-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/proxy.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - appnet
+
+volumes:
+  mongo_data:
+
+networks:
+  appnet:
+    driver: bridge
